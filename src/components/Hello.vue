@@ -1,56 +1,141 @@
 <template>
-   <div id = "app">
-     <section class = "row">
-       <div class = "small-6 columns">
-         <h1 class="text-center">玩家</h1>
-         <div class = "healthbar">
-           <div class = "healthbar text-center"
-           style="background-color: green; margin: 0; color: white;">
-             
-           </div>
-         </div>
-       </div>
-       <div class = "small-6 columns">
-         <h1 class="text-center">怪兽</h1>
-         <div class = "healthbar">
-           <div class = "healthbar text-center"
-           style="background-color: green; margin: 0; color: white;">
-             
-           </div>
-         </div>
-       </div>
-     </section>
-     <section class = "row controls">
-         <div class = "small-12 columns">
-             <button id = "start-game">开始游戏</button>
-         </div>
-     </section>
-     <section class = "row controls">
-         <div class = "small-12 columns">
-             <button id = "attack">暴击</button>
-             <button id = "special-attact">放大招</button>
-             <button id = "heal">治愈</button>
-             <button id = "give-up">投降</button>
-         </div>
-     </section>
-     <section class = "row log">
-         <div class = "small-12 columns">
-             <ul>
-                 <li>
-                   
-                 </li>
-             </ul>
-         </div>
-     </section>
-   </div>
+  <div class="app">
+    <section class="row">
+      <div class="small-6 columns">
+        <h1 class="text-center">玩家</h1>
+        <div class="healthbar">
+          <div class="healthbar text-center" 
+          style="background-color: green ; margin: 0 ; color: white;"
+          :style="{width: playerHealthy + '%'}">
+            {{playerHealthy}}
+          </div>
+        </div>
+      </div>
+      <div class="small-6 columns">
+        <h1 class="text-center">妖怪</h1>
+        <div class="healthbar">
+          <div class="healthbar text-center" 
+          style="background-color: green ; margin: 0 ; color: white;"
+          :style="{width: monsterHealthy + '%'}">
+            {{monsterHealthy}}
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="row controls" v-if="!gameIsRunning">
+      <div class="small-12 columns">
+        <button id="start-game" @click='startGame'>开始游戏</button>
+      </div>
+    </section>
+    <section class="row controls" v-else>
+      <div class="small-12 columns">
+        <button id="attack" @click="attack">暴击</button>
+        <button id="special-attack" @click="specialAttack">放大招</button>
+        <button id="heal" @click="heal">治愈</button>
+        <button id="give-up" @click="giveUp">投降</button>
+      </div>
+    </section>
+    <section class="row log">
+      <div class="small-12 columns">
+        <ul>
+          <li v-for="turn in turns"
+          :class="{'player-turn': turn.isPlayer, 'monster-turn': !turn.isPlayer}">
+          {{ turn.text}}
+          </li>
+        </ul>
+      </div>
+    </section>
+  </div>
 </template>
 
 <script>
 export default {
-  name: 'hello',
   data () {
     return {
-      msg: 'Welcome to Your Vue.js App'
+      playerHealthy: 100,
+      monsterHealthy: 100,
+      gameIsRunning: false,
+      turns: []
+    }
+  },
+  methods: {
+    startGame: function () {
+      console.log('start game')
+      this.playerHealthy = 100
+      this.monsterHealthy = 100
+      this.gameIsRunning = true
+      this.turns = []
+    },
+    attack: function () {
+      console.log('attack')
+      var damage = this.calculateDamage(3, 10)
+      this.monsterHealthy -= damage
+      this.turns.unshift({
+        isPlayer: true,
+        text: '玩家打击怪物，怪物伤害：' + damage
+      })
+      if (this.checkWin()) {
+        return
+      }
+      this.monsterAttacks()
+    },
+    specialAttack: function () {
+      var damage = this.calculateDamage(10, 20)
+      this.monsterHealthy -= damage
+      this.turns.unshift({
+        isPlayer: true,
+        text: '玩家发大招打击怪物，怪物伤害：' + damage
+      })
+      if (this.checkWin()) {
+        return
+      }
+      this.monsterAttacks()
+    },
+    heal: function () {
+      console.log('heal')
+      if (this.playerHealthy <= 90) {
+        this.playerHealthy += 10
+      } else {
+        this.playerHealthy = 100
+      }
+      this.turns.unshift({
+        isPlayer: true,
+        text: '玩家治愈10'
+      })
+      this.monsterAttacks()
+    },
+    giveUp: function () {
+      console.log('giveup')
+      this.gameIsRunning = false
+    },
+    monsterAttacks: function () {
+      var damage = this.calculateDamage(5, 12)
+      this.playerHealthy -= damage
+      this.turns.unshift({
+        isPlayer: false,
+        text: '怪物打击玩家，玩家伤害：' + damage
+      })
+    },
+    calculateDamage: function (min, max) {
+      return Math.max(Math.floor(Math.random() * max) + 1, min)
+    },
+    checkWin: function () {
+      if (this.monsterHealthy <= 0) {
+        if (confirm('玩家赢了！再来一局？')) {
+          this.startGame()
+        } else {
+          this.gameIsRunning = false
+        }
+        return true
+      } else if (this.playerHealthy <= 0) {
+        if (confirm('你输了！不服气，再来？')) {
+          this.startGame()
+        } else {
+          this.gameIsRunning = false
+        }
+        return true
+      }
+      return false
     }
   }
 }
@@ -58,9 +143,8 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-
 .text-center {
-    text-align: center;
+      text-align: center;
 }
 
 .healthbar {
@@ -80,32 +164,30 @@ export default {
 }
 
 .turn {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    font-weight: bold;
-    font-size: 22px;
-    
+  margin-top: 20px;
+  margin-bottom: 20px;
+  font-weight: bold;
+  font-size: 22px;
 }
 
 .log ul {
-    list-style: none;
-    font-weight: bold;
-    text-transform: uppercase;
+  list-style: none;
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
 .log ul li {
-    margin: 5px;
-    
+  margin: 5px;
 }
 
 .log ul .player-turn {
-    color: blue;
-    background-color: #e4e8ff;
+  color: blue;
+  background-color: #e4e8ff;
 }
 
 .log ul .monster-turn {
-    color: red;
-    background-color: #ffc0c1;
+  color: red;
+  background-color: #ffc0c1;
 }
 
 button {
@@ -115,42 +197,44 @@ button {
   box-shadow: 0 1px 1px black;
   margin: 10px;
 }
+
 #start-game {
-    background-color: #aaffb0;
+  background-color: #aaffb0;
 }
 
 #start-game:hover {
-    background-color: #76ff7e;
+  background-color: #76ff7e;
 }
 
 #attack {
-    background-color: #ff7367;
+  background-color: #ff7367;
 }
 
 #attack:hover {
-    background-color: #ff7367;
-}
-#special-attact {
-    background-color: #ffaf4f;
+  background-color: #ff3f43;
 }
 
-#special-attact:hover {
-    background-color: #ffaf4f;
+#special-attack {
+  background-color: #ffaf4f;
+}
+
+#special-attack:hover {
+  background-color: #ff9a2b;
 }
 
 #heal {
-    background-color: #aaffb0;
+  background-color: #aaffb0;
 }
 
 #heal:hover {
-    background-color: #aaffb0;
+  background-color: #76ff7e;
 }
 
 #give-up {
-    background-color: #ffffff;
+  background-color: #ffffff;
 }
 
 #give-up:hover {
-    background-color: #c7c7c7;
+  background-color: #c7c7c7;
 }
 </style>
